@@ -1,5 +1,5 @@
 // import React, { useMemo } from 'react'
-import { z } from 'zod'
+// import { z } from 'zod'
 
 
 import {
@@ -9,7 +9,7 @@ import {
 import { ResponseAreaTub } from '../response-area-tub'
 
 import { FSAInput } from './FSA.component'
-import { fsaAnswerSchema, FSA, defaultFSA, DEFAULT_FSA_CONFIG, FSAConfig, FSAFeedback, ValidationError, CheckPhase, FSAFeedbackSchema, fsaConfigSchema } from './type'
+import { fsaAnswerSchema, FSA, defaultFSA, FSAFeedback, CheckPhase } from './type'
 import { validateFSA } from './validateFSA'
 
 export class FSAResponseAreaTub extends ResponseAreaTub {
@@ -21,7 +21,7 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
 
   private previewFeedback: FSAFeedback | null = null
   private phase: CheckPhase = CheckPhase.Idle
-  private response: FSA | null = null
+  // private response: FSA | null = null
 
   public readonly delegateFeedback = false
   public readonly delegateLivePreview = true
@@ -48,34 +48,39 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
     const parsed = this.answerSchema.safeParse(props.answer)
     const validAnswer = parsed.success ? parsed.data : defaultFSA
 
-    this.response = validAnswer
+    // this.response = validAnswer
 
     /* ---------- Extract submitted feedback ---------- */
 
     const submittedFeedback: FSAFeedback | null = (() => {
+      console.log("raw:", props)
       const raw = props.feedback?.feedback
       if (!raw) return null
 
       try {
-        const jsonPart = raw.split('<br>')[1]?.trim()
+        const jsonPart = raw.split('<br />')[1]?.trim()
         if (!jsonPart) return null
         return JSON.parse(jsonPart)
-      } catch {
+      } catch (e) {
+
+        console.error('Failed to parse feedback JSON:', e)
         return null
       }
     })()
+    console.log("submitted:", submittedFeedback)
 
     /* ---------- Effective feedback ---------- */
 
     const effectiveFeedback =
       this.previewFeedback ?? submittedFeedback
 
+    console.log(submittedFeedback, this.previewFeedback, effectiveFeedback)
+
     return (
       <FSAInput
         {...props}
         answer={validAnswer}
         feedback={effectiveFeedback}
-        previewFeedback={null} // 🔥 PREVIEW IS AN OVERLAY, NOT A PEER
         phase={this.phase}
         handleChange={(val: FSA) => {
           props.handleChange(val)
@@ -90,6 +95,7 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
             this.phase = CheckPhase.Idle
           }
         }}
+        isTeacherMode={false}
       />
     )
   }
@@ -105,7 +111,6 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
         feedback={null}
         answer={this.answer}
         phase={CheckPhase.Evaluated}
-        previewFeedback={null}
         handleChange={(val: FSA) => {
           this.answer = val
           props.handleChange({
@@ -113,6 +118,7 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
             answer: val,
           })
         }}
+        isTeacherMode={true}
       />
     )
   }

@@ -1,4 +1,4 @@
-import { makeStyles } from '@styles'
+// import { makeStyles } from '@styles'
 import cytoscape, { Core, NodeSingular, EdgeSingular } from 'cytoscape'
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -11,16 +11,17 @@ interface FSAInputProps {
   answer: FSA
   handleChange: (fsa: FSA) => void
   feedback: FSAFeedback | null
-  previewFeedback: FSAFeedback | null
   phase: CheckPhase
+  isTeacherMode: boolean
 }
+
 
 export const FSAInput: React.FC<FSAInputProps> = ({
   answer,
   handleChange,
   feedback,
-  previewFeedback,
-  phase
+  phase,
+  isTeacherMode
 }) => {
   const { classes } = useLocalStyles()
 
@@ -106,6 +107,16 @@ export const FSAInput: React.FC<FSAInputProps> = ({
             width: 3,
           },
         },
+        {
+          selector: 'edge.epsilon',
+          style: {
+            'line-style': 'dashed',
+            'line-color': '#6a1b9a',
+            'target-arrow-color': '#6a1b9a',
+            width: 3,
+            'font-style': 'italic',
+          },
+        },
       ],
     })
 
@@ -132,7 +143,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
               id: `e-${fromNode}-${node.id()}-${Date.now()}`,
               source: fromNode,
               target: node.id(),
-              label: config.epsilon_symbol,
+              label: 'edge'
             },
           })
           cy.nodes().removeClass('edge-source')
@@ -159,7 +170,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
       cy.off('tap', 'node', tapNode)
       cy.off('tap', 'edge', tapEdge)
     }
-  }, [drawMode, fromNode, config.epsilon_symbol])
+  }, [drawMode, fromNode])
 
   /* -------------------- sync to backend -------------------- */
   const syncToBackend = (): void => {
@@ -170,7 +181,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
       states: cy.nodes()?.map((n) => n.id()),
       transitions: cy.edges()?.map(
         (e) =>
-          `${e.source().id()}|${e.data('label') || config.epsilon_symbol}|${e.target().id()}`,
+          `${e.source().id()}|${e.data('label') || ' '}|${e.target().id()}`,
       ),
       initial_state: answer.initial_state,
       accept_states: answer.accept_states,
@@ -274,8 +285,10 @@ export const FSAInput: React.FC<FSAInputProps> = ({
     }
   }, [feedback])
 
+
   return (
     <div className={classes.container}>
+      {/* Left Panel */}
       <ItemPropertiesPanel
         cyRef={cyRef}
         classes={classes}
@@ -291,27 +304,52 @@ export const FSAInput: React.FC<FSAInputProps> = ({
         handleChange={handleChange}
         answer={answer}
         feedback={feedback}
-        previewFeedback={previewFeedback}
         phase={phase}
       />
 
-      <div ref={containerRef} className={classes.cyWrapper} />
+      {/* Canvas Area */}
+      <div className={classes.canvasArea}>
+        {isTeacherMode && (
+          <div className={classes.canvasHeader}>
+            <span className={classes.headerTitle}>
+              Teacher Mode
+            </span>
 
-      <ConfigPanel
-        config={config}
-        setConfig={(val: FSAConfig) => {
-          const fsa: FSA = {
-            ...answer,
-            config: JSON.stringify(val)
-          }
+            <button
+              className={classes.configButton}
+              onClick={() => setConfigOpen(true)}
+            >
+              Evaluation Settings
+            </button>
+          </div>
+        )}
 
-          handleChange(fsa)
-          setConfig(val)
-        }}
-        configOpen={configOpen}
-        setConfigOpen={setConfigOpen}
-        classes={classes}
-      />
+        <div ref={containerRef} className={classes.cyWrapper} />
+      </div>
+
+      {/* Side Modal */}
+      {isTeacherMode && configOpen && (
+        <>
+          <div
+            className={classes.overlayBackdrop}
+            onClick={() => setConfigOpen(false)}
+          />
+
+          <ConfigPanel
+            config={config}
+            setConfig={(val: FSAConfig) => {
+              const fsa: FSA = {
+                ...answer,
+                config: JSON.stringify(val),
+              }
+              handleChange(fsa)
+              setConfig(val)
+            }}
+            onClose={() => setConfigOpen(false)}
+            classes={classes}
+          />
+        </>
+      )}
     </div>
   )
 }

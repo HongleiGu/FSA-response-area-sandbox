@@ -26,7 +26,6 @@ interface ItemPropertiesPanelProps {
 
   syncToBackend: () => void
   feedback: FSAFeedback | null
-  previewFeedback: FSAFeedback | null
   phase: CheckPhase
 }
 
@@ -45,7 +44,6 @@ export default function ItemPropertiesPanel({
   handleChange,
   syncToBackend,
   feedback,
-  previewFeedback,
   phase
 }: ItemPropertiesPanelProps): JSX.Element {
   return (
@@ -140,7 +138,16 @@ export default function ItemPropertiesPanel({
             className={classes.inputField}
             value={selectedEdge.data('label') ?? ''}
             onChange={(e) => {
-              selectedEdge.data('label', e.target.value)
+              const value = e.target.value.trim()
+
+              selectedEdge.data('label', value)
+
+              if (value === 'ε' || value.toLowerCase() === 'epsilon' || value === '') {
+                selectedEdge.addClass('epsilon')
+              } else {
+                selectedEdge.removeClass('epsilon')
+              }
+
               syncToBackend()
             }}
           />

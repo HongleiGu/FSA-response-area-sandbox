@@ -28,10 +28,6 @@ export const fsaConfigSchema = z.object({
   show_counterexample: z.boolean().optional(),
 
   max_test_length: z.number().int().positive().optional(),
-
-  is_dev: z.boolean().optional(),
-
-  epsilon_symbol: z.string(),
 })
 
 export type FSAConfig = z.infer<typeof fsaConfigSchema>
@@ -47,10 +43,7 @@ export const DEFAULT_FSA_CONFIG: FSAConfig =  {
   highlight_errors: true,
   show_counterexample: true,
 
-  max_test_length: 10,
-
-  is_dev: false,
-  epsilon_symbol: "epsilon"
+  max_test_length: 10
 }
 
 /* ===========================

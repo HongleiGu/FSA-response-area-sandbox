@@ -1,13 +1,12 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 
 import {
   CheckPhase,
-  FSAFeedbackSchema,
   type FSAFeedback,
 } from '../type'
 
 interface FSAFeedbackPanelProps {
-  feedback: FSAFeedback | null
+  feedback: FSAFeedback |  null
   phase: CheckPhase
 }
 
@@ -16,12 +15,8 @@ export function FSAFeedbackPanel({
   phase,
 }: FSAFeedbackPanelProps) {
 
-  const parsed = useMemo(
-    () => FSAFeedbackSchema.safeParse(feedback),
-    [feedback],
-  )
 
-  if (!feedback || !parsed.success) {
+  if (!feedback) {
     return (
       <div style={{ opacity: 0.6, fontStyle: 'italic' }}>
         {phase === CheckPhase.PreviewError
@@ -31,7 +26,7 @@ export function FSAFeedbackPanel({
     )
   }
 
-  const safeFeedback = parsed.data
+  const safeFeedback = feedback
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
