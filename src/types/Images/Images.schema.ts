@@ -7,24 +7,38 @@ export const CONSTRAINTS = {
   resizeMaxSide: { min: 0, max: 4096, default: 0 }, // 0 means no resize
 }
 
-// --- SCHEMAS ---
 export const configSchema = z.object({
-  maxImages: z.number().min(CONSTRAINTS.maxImages.min).max(CONSTRAINTS.maxImages.max).default(CONSTRAINTS.maxImages.default),
+  maxImages: z
+    .number()
+    .min(CONSTRAINTS.maxImages.min)
+    .max(CONSTRAINTS.maxImages.max)
+    .default(CONSTRAINTS.maxImages.default),
   allowedTypes: z.array(z.string()).default(CONSTRAINTS.allowedTypes.default),
-  maxSizeMb: z.number().min(CONSTRAINTS.maxSizeMb.min).max(CONSTRAINTS.maxSizeMb.max).default(CONSTRAINTS.maxSizeMb.default),
-  resizeMaxSide: z.number().min(CONSTRAINTS.resizeMaxSide.min).max(CONSTRAINTS.resizeMaxSide.max).default(CONSTRAINTS.resizeMaxSide.default),
+  maxSizeMb: z
+    .number()
+    .min(CONSTRAINTS.maxSizeMb.min)
+    .max(CONSTRAINTS.maxSizeMb.max)
+    .default(CONSTRAINTS.maxSizeMb.default),
+  resizeMaxSide: z
+    .number()
+    .min(CONSTRAINTS.resizeMaxSide.min)
+    .max(CONSTRAINTS.resizeMaxSide.max)
+    .default(CONSTRAINTS.resizeMaxSide.default),
 })
 
-export const answerSchema = z.array(
-  z.object({
-    data: z.string(), // base64
-    name: z.string(),
-    type: z.string(),
-    size: z.number(),
-    comment: z.string().optional(),
-  })
-).max(CONSTRAINTS.maxImages.max)
+const imageBaseSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  size: z.number(),
+  comment: z.string().optional(),
+})
 
-// --- TYPE EXPORTS ---
+const imageSchema = imageBaseSchema.extend({ url: z.string() })
+const legacyImageSchema = imageBaseSchema.extend({ data: z.string() })
+
+export const answerSchema = z
+  .array(imageSchema.or(legacyImageSchema))
+  .max(CONSTRAINTS.maxImages.max)
+
 export type ImagesConfig = z.infer<typeof configSchema>
 export type ImagesAnswer = z.infer<typeof answerSchema>

@@ -12,23 +12,24 @@ import {
   StudentUpsertSubmissionDraftMutationVariables,
 } from '@api/graphql'
 import {
+  ResponseAreaAnswer,
+  ResponseAreaAnswerContext,
+} from '@components/ResponseArea/types/base-props.type'
+import {
   IModularResponseSchema,
   IResponseAreaSchema,
-} from '@modules/shared/schemas/question-form.schema'
-import { createContext, useContext } from 'react'
-
-import {
   PickedDraftFeedback,
   PickedFeedback,
-} from '../ResponseArea/useResponseAreaForm'
+} from '@modules/shared/schemas/question-form.schema'
+import { createContext, useContext } from 'react'
 
 export type GetSubmissionPayloadFunction = (
   area:
     | StandardTeacherResponseAreaFragment
     | StandardResponseAreaFragment
     | IResponseAreaSchema,
-  answer: IModularResponseSchema['answer'],
-  additionalParams?: Record<string, any>,
+  answer: ResponseAreaAnswer,
+  answerContext?: ResponseAreaAnswerContext,
 ) => TeacherSubmitTestMutationVariables | SubmitResponseMutationVariables
 
 export type GetSubmissionDraftPayloadFunction = (
@@ -37,7 +38,7 @@ export type GetSubmissionDraftPayloadFunction = (
     | StandardResponseAreaFragment
     | IResponseAreaSchema,
   answer: IModularResponseSchema['answer'],
-  additionalParams?: Record<string, any>,
+  answerContext?: ResponseAreaAnswerContext,
 ) => StudentUpsertSubmissionDraftMutationVariables | undefined
 
 export type ExtractFeedbackFunction = (

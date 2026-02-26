@@ -1,54 +1,81 @@
-import { makeStyles } from '@styles'
-import { useCallback } from 'react'
+import { OmniInput } from '@components/OmniInput/OmniInput.component'
+import { OmniOutput } from '@components/OmniInput/utils'
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import React from 'react'
 
 import { BaseResponseAreaProps } from '../base-props.type'
+import { normalizeAnswerBySubject } from '../helper'
+
+import { EssayAnswer } from '.'
 
 type EssayInputProps = Omit<
   BaseResponseAreaProps,
-  'handleChange' | 'answer'
+  'handleChange' | 'answer' | 'config'
 > & {
-  handleChange: (val: string) => void
-  answer?: string
+  handleChange: (answer: EssayAnswer) => void
+  answer: EssayAnswer
+  config: {
+    allowDraw: boolean
+    allowScan: boolean
+    repeatForSubjects?: boolean
+  }
 }
 
 export const EssayInput: React.FC<EssayInputProps> = ({
   handleChange,
   handleSubmit,
   answer,
+  config,
+  subjects,
 }) => {
-  const { classes } = useStyles()
-  const submitOnEnter: React.KeyboardEventHandler<HTMLTextAreaElement> =
-    useCallback(
-      event => {
-        const isMac = navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-        if (
-          event.key === 'Enter' &&
-          ((isMac && event.metaKey) || (!isMac && event.ctrlKey))
-        ) {
-          return handleSubmit?.()
-        }
-      },
-      [handleSubmit],
-    )
+  const normalized = normalizeAnswerBySubject({
+    answer,
+    subjects,
+    repeatForSubjects: config.repeatForSubjects,
+    fallback: '',
+  })
 
+  // Non-subject mode: single text area
+  if (normalized.subjects === undefined) {
+    return (
+      <OmniInput
+        defaultValue={normalized.answer}
+        onChange={(omniOutput: OmniOutput) => {
+          handleChange(omniOutput.raw ?? '')
+        }}
+        onSubmit={handleSubmit}
+        placeholder="Type your response here…"
+        processingMode="markdown"
+      />
+    )
+  }
+
+  // Subject mode: one text area per subject
   return (
-    <textarea
-      defaultValue={answer}
-      className={classes.textarea}
-      onChange={event => {
-        handleChange(event.target.value)
-      }}
-      onKeyDown={submitOnEnter}
-      placeholder="Type your response here…"
-    />
+    <Stack spacing={3} p={2}>
+      {normalized.subjects.map(subject => (
+        <Box key={subject.userId}>
+          <Typography variant="subtitle1" fontWeight="bold" mb={1}>
+            {subject.label}
+          </Typography>
+          <OmniInput
+            defaultValue={normalized.answer[subject.userId] ?? ''}
+            onChange={(omniOutput: OmniOutput) => {
+              handleChange({
+                ...normalized.answer,
+                [subject.userId]: omniOutput.raw ?? '',
+              })
+            }}
+            onSubmit={handleSubmit}
+            placeholder="Type your response here…"
+            processingMode="markdown"
+          />
+        </Box>
+      ))}
+    </Stack>
   )
 }
-
-const useStyles = makeStyles()(theme => ({
-  textarea: {
-    width: '100%',
-    minHeight: theme.spacing(20),
-  },
-}))
 
 export const HMR = true // ensure HMR triggers on parent imports

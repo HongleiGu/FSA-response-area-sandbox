@@ -1,0 +1,19 @@
+export const Environment = {
+  PAGE_SIZE: 25,
+  NODE_ENV: <string>process.env.NODE_ENV,
+  SENTRY_DSN: <string>process.env.NEXT_PUBLIC_SENTRY_DSN,
+  APP_ENVIRONMENT: <string>process.env.NEXT_PUBLIC_APP_ENVIRONMENT,
+  SENTRY_ENV: <string>process.env.NEXT_PUBLIC_SENTRY_ENV,
+  GRAPHQL_URL: <string>process.env.NEXT_PUBLIC_GRAPHQL_URL,
+  MILKDOWN_LEAN: <boolean>(process.env.NEXT_PUBLIC_MILKDOWN_LEAN === 'true'),
+  FIREBASE_PROJECT_ID: <string>process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  FIREBASE_APP_ID: <string>process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  FIREBASE_AUTH_DOMAIN: <string>process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  FIREBASE_API_KEY: <string>process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  FIREBASE_STORAGE_BUCKET: <string>(
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  ),
+  FIREBASE_MESSAGING_SENDER_ID: <string>(
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+  ),
+}

@@ -53,7 +53,7 @@ export const MultipleChoice: React.FC<MultipleChoiceProps> = ({
           handleChange(newAnswers)
         }}
       />
-      <Text className={classes.text} data={option} />
+      <Text data={option} />
     </div>
   ))
 
@@ -65,9 +65,6 @@ const useStyles = makeStyles()(theme => ({
     display: 'flex',
     alignItems: 'center',
     marginBottom: theme.spacing(2),
-  },
-  text: {
-    overflow: 'scroll',
   },
 }))
 
