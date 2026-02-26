@@ -25,9 +25,6 @@ export const fsaConfigSchema = z.object({
   check_completeness: z.boolean().optional(),
 
   highlight_errors: z.boolean().optional(),
-  show_counterexample: z.boolean().optional(),
-
-  max_test_length: z.number().int().positive().optional(),
 })
 
 export type FSAConfig = z.infer<typeof fsaConfigSchema>
@@ -40,10 +37,7 @@ export const DEFAULT_FSA_CONFIG: FSAConfig =  {
   check_minimality: false,
   check_completeness: false,
 
-  highlight_errors: true,
-  show_counterexample: true,
-
-  max_test_length: 10
+  highlight_errors: true
 }
 
 /* ===========================
