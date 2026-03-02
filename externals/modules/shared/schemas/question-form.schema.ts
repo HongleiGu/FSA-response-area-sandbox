@@ -1,3 +1,8 @@
+import {
+  StandardSubmissionDraftFragment,
+  StandardSubmissionFragment,
+  StandardSubmissionWithoutFeedbackFragment,
+} from '@api/graphql'
 import { ZodJson } from '@utils/form'
 import { jsonNestedSchema } from '@utils/json'
 import { z } from 'zod'
@@ -41,7 +46,7 @@ export const guidanceSchema = z.object({
 
 export type IGuidanceSchema = z.input<typeof guidanceSchema>
 
-export const responseAreaAnswerSchema = jsonNestedSchema
+export const responseAreaAnswerSchema = jsonNestedSchema.nullable()
 export type IResponseAreaAnswerSchema = z.input<typeof responseAreaAnswerSchema>
 
 export const modularResponseSchema = z.object({
@@ -54,7 +59,7 @@ export type IModularResponseSchema = z.input<typeof modularResponseSchema>
 
 export const testSchema = z.object({
   payload: responseAreaAnswerSchema.optional(),
-  additionalParams: z.object({}).optional(),
+  payloadContext: z.object({}).optional(),
   expectedResponse: z.boolean(),
 })
 
@@ -96,7 +101,7 @@ export const responseAreaSchema = z.object({
   saveAllowed: z.boolean(),
   isPublishedOrSaved: z.boolean(),
   hasSubmissions: z.boolean(),
-  evaluationFunctionName: z.string().min(1),
+  evaluationFunctionName: z.string(),
   inputSymbols: symbolsInputSchema.optional(),
   gradeParams: ZodJson.nullish(),
   response: modularResponseSchema.optional(),
@@ -138,10 +143,11 @@ export const questionSchema = z.object({
   id: z.string().optional(),
   isDirty: z.boolean().optional(),
   isPublished: z.boolean().optional(),
-  title: z.string().min(1, { message: 'Required' }),
+  title: z.string().trim().min(1, { message: 'Required' }),
   guidance: guidanceSchema.optional(),
   masterContent: z.string(),
   questionSettings: questionSettings.optional(),
+  isSurvey: z.boolean().optional(),
   parts: z.array(partSchema).default([]),
 })
 
@@ -164,3 +170,21 @@ const customErrorMap: z.ZodErrorMap = (issue, ctx) => {
 }
 
 z.setErrorMap(customErrorMap)
+
+export type PickedFeedback =
+  | Pick<
+      StandardSubmissionFragment,
+      | 'isCorrect'
+      | 'isError'
+      | 'feedback'
+      | 'matchedCase'
+      | 'color'
+      | 'submissionId'
+    >
+  | Pick<StandardSubmissionWithoutFeedbackFragment, 'submissionId'>
+  | null
+
+export type PickedDraftFeedback = Pick<
+  StandardSubmissionDraftFragment,
+  'isCorrect' | 'isError' | 'feedback' | 'matchedCase'
+> | null

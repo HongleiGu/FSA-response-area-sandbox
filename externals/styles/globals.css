@@ -49,6 +49,8 @@ a {
   --content-spacing: 8px;
   --editor-gap-top: var(--content-spacing);
   --editor-gap-bottom: var(--content-spacing);
+  --editor-gap-left: 16px;
+  --editor-gap-right: 16px;
   /* Padding around equations (Lexdown) */
   --block-equation-vertical-padding: 0.1rem;
   /* Shadows */
@@ -204,10 +206,11 @@ code {
   display: block;
   position: relative;
   outline: 0;
-  padding: 0 16px 0;
   background-color: inherit;
   padding-top: var(--editor-gap-top);
   padding-bottom: var(--editor-gap-bottom);
+  padding-left: var(--editor-gap-left);
+  padding-right: var(--editor-gap-right);
 }
 
 .editor-placeholder {

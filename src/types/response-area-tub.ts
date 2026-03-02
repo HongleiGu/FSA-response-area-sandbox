@@ -3,11 +3,14 @@ import {
   StudentModularResponseFragment,
   TeacherCreateResponseInput,
 } from '@api/graphql'
+import { JsonAnswerDisplay } from '@modules/shared/components/ResponseArea/ResponseAreaAnswer.component'
 import { IModularResponseSchema } from '@modules/shared/schemas/question-form.schema'
 import { JsonNestedSchema } from '@utils/json'
 import { ZodSchema } from 'zod'
 
 import {
+  BaseAnswerDisplayProps,
+  BaseAnswerStatsProps,
   BaseResponseAreaProps,
   BaseResponseAreaWizardProps,
 } from './base-props.type'
@@ -184,6 +187,16 @@ export abstract class ResponseAreaTub {
   }
 
   /**
+   * Initializes the response area with config only.
+   * Used when config is needed for validation but answer is not available.
+   *
+   * @param config - Configuration object for the response type
+   */
+  initWithConfig = (config: any): void => {
+    this.extractConfig(config)
+  }
+
+  /**
    * Initializes the response area with student-specific data.
    * Used when displaying the response area to students (config only, no answer).
    * Usually doesn't need to be overridden.
@@ -310,5 +323,36 @@ export abstract class ResponseAreaTub {
    */
   WizardComponent: React.FC<BaseResponseAreaWizardProps> = props => {
     throw new Error('Not implemented')
+  }
+
+  AnswerDisplayComponent: React.FC<BaseAnswerDisplayProps> = props => {
+    return JsonAnswerDisplay(this.answer)
+  }
+
+  AnswerStatsComponent?: React.FC<BaseAnswerStatsProps>
+
+  /**
+   * Custom check for response area to perform when "check" button is pressed.
+   * If no errors are thrown, the submission will be sent to the backend.
+   * If an error is thrown, the error message will be displayed to the user.
+   *
+   * @throws Error - The error message will be displayed to the user
+   *
+   * @example ```ts
+   * customCheck = (submissionInput: any) => {
+   *   if ((submissionInput as (number | null)[]).includes(null)) {
+   *     throw new Error("Please respond to every statement") // null means a row in the Likert grid was unanswered
+   *   }
+   * }
+   * ```
+   */
+  customCheck: (submissionInput: any) => void = submissionInput => {
+    if (
+      submissionInput === undefined ||
+      submissionInput === null ||
+      submissionInput === ''
+    ) {
+      throw new Error('Required')
+    }
   }
 }

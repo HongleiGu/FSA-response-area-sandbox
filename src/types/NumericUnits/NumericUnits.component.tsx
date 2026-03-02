@@ -34,6 +34,8 @@ export const NumericUnits: React.FC<NumericUnitsProps> = ({
   useEffect(() => {
     if (number && units) {
       handleChange(number + ' ' + units)
+    } else {
+      handleChange('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [number, units])
