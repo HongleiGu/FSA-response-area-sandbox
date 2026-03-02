@@ -27,6 +27,8 @@ interface ItemPropertiesPanelProps {
   syncToBackend: () => void
   feedback: FSAFeedback | null
   phase: CheckPhase
+
+  pathRef: React.MutableRefObject<paper.Path | null>
 }
 
 export default function ItemPropertiesPanel({
@@ -44,7 +46,8 @@ export default function ItemPropertiesPanel({
   handleChange,
   syncToBackend,
   feedback,
-  phase
+  phase,
+  pathRef
 }: ItemPropertiesPanelProps): JSX.Element {
   return (
     <div className={classes.panel}>
@@ -66,15 +69,26 @@ export default function ItemPropertiesPanel({
         Fit to Screen
       </button>
 
-      <button
-        className={classes.addButton}
-        onClick={() => {
-          setDrawMode((m) => !m)
-          setFromNode(null)
-          cyRef.current?.nodes().removeClass('edge-source edge-target')
+      <button 
+        className={classes.addButton} 
+        onClick={() => { 
+          setDrawMode((m) => !m); 
+          setFromNode(null); 
+          cyRef.current?.nodes().removeClass('edge-source');
+          
+          // Clear any existing drawing when toggling draw mode
+          if (pathRef.current) {
+            pathRef.current.remove()
+            pathRef.current = null
+          }
+        }}
+        style={{ 
+          backgroundColor: drawMode ? '#ff4444' : '#4CAF50',
+          color: 'white',
+          borderColor: drawMode ? '#ff4444' : '#4CAF50'
         }}
       >
-        {drawMode ? 'Cancel Draw' : 'Draw Transition'}
+        {drawMode ? '✗ Cancel Draw Mode' : '✏️ Enable Draw Mode'}
       </button>
 
       {/* -------------------- Node Properties -------------------- */}

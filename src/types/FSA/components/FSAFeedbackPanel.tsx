@@ -27,21 +27,26 @@ export function FSAFeedbackPanel({
   }
 
   const safeFeedback = feedback
+  console.log(safeFeedback)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div
-        style={{
-          padding: 10,
-          borderRadius: 6,
-          background: '#f5f7fa',
-          fontWeight: 600,
-        }}
-      >
-        {
-          phase == CheckPhase.PreviewError ? "Errors in Preview" : "Errors in Evaluation"
-        }
-      </div>
+      {
+        safeFeedback.errors.length != 0 ?
+        <div
+          style={{
+            padding: 10,
+            borderRadius: 6,
+            background: '#f5f7fa',
+            fontWeight: 600,
+          }}
+        >
+          {
+            phase == CheckPhase.PreviewError ? "Errors in Preview" : "Errors in Evaluation"
+          }
+        </div>
+        : null
+      }
       {/* ================= Summary ================= */}
       {safeFeedback.summary && (
         <div
