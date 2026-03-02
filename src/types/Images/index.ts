@@ -1,14 +1,20 @@
-import { ResponseAreaTub } from '../response-area-tub'
-import { ImagesInputComponent } from './ImagesInput.component'
-import { ImagesWizardComponent } from './ImagesWizard.component'
 import {
   BaseResponseAreaProps,
   BaseResponseAreaWizardProps,
 } from '../base-props.type'
-import { configSchema, answerSchema, CONSTRAINTS, ImagesConfig, ImagesAnswer } from './Images.schema'
+import { ResponseAreaTub } from '../response-area-tub'
 
+import {
+  configSchema,
+  answerSchema,
+  CONSTRAINTS,
+  ImagesConfig,
+  ImagesAnswer,
+} from './Images.schema'
+import { ImagesInputComponent } from './ImagesInput.component'
+import { ImagesWizardComponent } from './ImagesWizard.component'
 
-export class SandboxResponseAreaTub extends ResponseAreaTub {
+export class ImagesResponseAreaTub extends ResponseAreaTub {
   public readonly responseType = 'IMAGES'
   protected configSchema = configSchema
   protected answerSchema = answerSchema
@@ -16,7 +22,7 @@ export class SandboxResponseAreaTub extends ResponseAreaTub {
   protected config?: ImagesConfig
   protected answer?: ImagesAnswer
 
- initWithDefault = () => {
+  initWithDefault = () => {
     this.config = {
       maxImages: CONSTRAINTS.maxImages.default,
       allowedTypes: CONSTRAINTS.allowedTypes.default,
@@ -29,29 +35,6 @@ export class SandboxResponseAreaTub extends ResponseAreaTub {
   initWithConfig = (config: ImagesConfig) => {
     this.config = config
     this.answer = []
-  }
-
-  customCheck = () => {
-    //Validate configuration and answer
-    if (!this.config) return false
-    if (!Array.isArray(this.answer)) return false
-
-    //Check number of images
-    if (this.answer.length > this.config.maxImages) return false
-    if (this.answer.length <= 0) return false
-
-    //Check each image
-    for (const img of this.answer) {
-      //Check required fields
-      if (!img) return false
-      if (typeof img.data !== 'string' ) return false
-      if (typeof img.name !== 'string' || !img.name) return false
-      if (typeof img.type !== 'string' || !this.config.allowedTypes.includes(img.type)) return false
-      if (typeof img.size !== 'number' || img.size > this.config.maxSizeMb * 1024 * 1024) return false
-      //Optional comment
-      if (img.comment !== undefined && typeof img.comment !== 'string') return false
-    }
-    return true
   }
 
   InputComponent = (props: BaseResponseAreaProps) => {

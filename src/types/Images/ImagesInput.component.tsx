@@ -1,14 +1,25 @@
-import React, { useRef } from 'react'
+import { Close as CloseIcon } from '@mui/icons-material'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import { uploadFile } from '@services/image'
+import { GraphqlSdk } from '@services/sdk'
+import NextImage from 'next/image'
+import React, { useRef, useState } from 'react'
+
 import { BaseResponseAreaProps } from '../base-props.type'
+
 import { CONSTRAINTS, ImagesConfig, ImagesAnswer } from './Images.schema'
 
-type ImagesInputProps = Omit<BaseResponseAreaProps, 'config' | 'handleChange'> & {
+type ImagesInputProps = Omit<
+  BaseResponseAreaProps,
+  'config' | 'handleChange'
+> & {
   config?: ImagesConfig
-  
   handleChange: (answer: ImagesAnswer) => void
 }
-
-// --- INPUT COMPONENT ---
 
 export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
   config,
@@ -17,6 +28,7 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
   typesafeErrorMessage,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
   const typedAnswer = (Array.isArray(answer) ? answer : []) as ImagesAnswer
   const cfg = config || {
     maxImages: CONSTRAINTS.maxImages.default,
@@ -26,7 +38,7 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
   }
   const { maxImages, allowedTypes, maxSizeMb } = cfg
 
-  const resizeImage = (file: File, maxSide: number): Promise<{ data: string; size: number }> => {
+  const resizeImage = (file: File, maxSide: number): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image()
       img.onload = () => {
@@ -47,12 +59,9 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
         canvas.width = width
         canvas.height = height
         ctx.drawImage(img, 0, 0, width, height)
-        canvas.toBlob((blob) => {
+        canvas.toBlob(blob => {
           if (blob) {
-            const reader = new FileReader()
-            reader.onload = () => resolve({ data: reader.result as string, size: blob.size })
-            reader.onerror = reject
-            reader.readAsDataURL(blob)
+            resolve(blob)
           } else {
             reject(new Error('Failed to create blob'))
           }
@@ -67,47 +76,67 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
     if (!files) return
     const arr: ImagesAnswer = []
     const resizeMaxSide = cfg.resizeMaxSide || 0
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      if (!file) continue;
-      if (
-        allowedTypes &&
-        !allowedTypes.includes(file.type)
-      ) {
-        alert(`Unsupported file type: ${file?.type}`)
-        continue
-      }
-      // Read file as base64, resize if needed
-      let data: string
-      let size: number
-      if (resizeMaxSide > 0) {
-        const resized = await resizeImage(file, resizeMaxSide)
-        data = resized.data
-        size = resized.size
-      } else {
-        data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        size = file.size
-      }
-      if (size > (maxSizeMb || CONSTRAINTS.maxSizeMb.default) * 1024 * 1024) {
-        alert(`File ${file?.name} exceeds the limit ${maxSizeMb} MB`)
-        continue
-      }
 
-      arr.push({
-        data, // base64
-        name: file.name,
-        type: file.type,
-        size,
-        comment: '',
-      })
+    setUploading(true)
+    try {
+      const sdk = await GraphqlSdk()
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        if (!file) continue
+        if (allowedTypes && !allowedTypes.includes(file.type)) {
+          alert(`Unsupported file type: ${file.type}`)
+          continue
+        }
+
+        let blob: Blob
+        if (resizeMaxSide > 0) {
+          blob = await resizeImage(file, resizeMaxSide)
+        } else {
+          blob = file
+        }
+
+        if (
+          blob.size >
+          (maxSizeMb || CONSTRAINTS.maxSizeMb.default) * 1024 * 1024
+        ) {
+          alert(`File ${file.name} exceeds the limit ${maxSizeMb} MB`)
+          continue
+        }
+
+        try {
+          const res = await sdk.CreateSignedMedia({
+            input: { contentType: file.type },
+          })
+          const url = await uploadFile(
+            blob,
+            res.student_createSignedImage,
+            file.type,
+          )
+
+          arr.push({
+            url,
+            name: file.name,
+            type: file.type,
+            size: blob.size,
+            comment: '',
+          })
+        } catch (err) {
+          console.error(`Failed to upload ${file.name}:`, err)
+          alert(`Failed to upload ${file.name}`)
+        }
+      }
+    } finally {
+      setUploading(false)
     }
-    const newAnswer = [...typedAnswer, ...arr].slice(0, maxImages || CONSTRAINTS.maxImages.default)
-    handleChange(newAnswer)
+
+    if (arr.length > 0) {
+      const newAnswer = [...typedAnswer, ...arr].slice(
+        0,
+        maxImages || CONSTRAINTS.maxImages.default,
+      )
+      handleChange(newAnswer)
+    }
   }
 
   const handleRemove = (idx: number) => {
@@ -126,7 +155,7 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
   }
 
   return (
-    <div>
+    <Box>
       <input
         ref={inputRef}
         type="file"
@@ -136,59 +165,74 @@ export const ImagesInputComponent: React.FC<ImagesInputProps> = ({
         onChange={e => handleFiles(e.target.files)}
         data-testid="images-input"
       />
-      <button
-        type="button"
+      <Button
+        variant="contained"
         onClick={() => inputRef.current?.click()}
-        disabled={typedAnswer.length >= (maxImages || CONSTRAINTS.maxImages.default)}
-        style={{
-          backgroundColor: '#0099c4',
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '4px',
-          padding: '8px 16px',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          cursor: 'pointer',
-          boxShadow: '0px 3px 1px -2px rgba(145, 158, 171, 0.2), 0px 2px 2px 0px rgba(145, 158, 171, 0.14), 0px 1px 5px 0px rgba(145, 158, 171, 0.12)',
-          transition: 'background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
-        }}
-      >
-        Add images
-      </button>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        disabled={
+          uploading ||
+          typedAnswer.length >= (maxImages || CONSTRAINTS.maxImages.default)
+        }>
+        {uploading ? 'Uploading…' : 'Add images'}
+      </Button>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
         {typedAnswer.map((img, idx) => (
-          <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ position: 'relative' }}>
-              <img
-                src={img.data}
+          <Box
+            key={idx}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Box sx={{ position: 'relative', width: 100, height: 100 }}>
+              <NextImage
+                src={'url' in img ? img.url : img.data}
                 alt={img.name}
-                style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid #ccc' }}
-              />
-              <button
-                type="button"
-                onClick={() => handleRemove(idx)}
+                fill
+                unoptimized
                 style={{
-                  position: 'absolute', top: 2, right: 2, background: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer'
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  border: '1px solid #ccc',
                 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => handleRemove(idx)}
                 aria-label="Delete photo"
-              >✕</button>
-            </div>
-            <textarea
+                sx={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  bgcolor: 'background.paper',
+                  '&:hover': { bgcolor: 'grey.200' },
+                }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <TextField
+              size="small"
+              multiline
+              rows={2}
               value={img.comment || ''}
               onChange={e => handleCommentChange(e.target.value, idx)}
-              placeholder="Add a comment (optional)"
-              style={{ width: 100, height: 40, resize: 'none', borderRadius: 4, border: '1px solid #ccc', padding: 4, fontSize: 12 }}
+              placeholder="Comment (optional)"
               aria-label={`Comment for ${img.name}`}
+              sx={{ width: 100 }}
             />
-          </div>
+          </Box>
         ))}
-      </div>
+      </Box>
       {typesafeErrorMessage && (
-        <div style={{ color: 'red', marginTop: 4 }}>{typesafeErrorMessage}</div>
+        <Typography color="error" variant="caption" sx={{ mt: 0.5 }}>
+          {typesafeErrorMessage}
+        </Typography>
       )}
-      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-       Maximum {maxImages || CONSTRAINTS.maxImages.default} photos, types: {(allowedTypes || []).join(', ')}, max {maxSizeMb || CONSTRAINTS.maxSizeMb.default} MB/file
-      </div>
-    </div>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', mt: 0.5 }}>
+        Maximum {maxImages || CONSTRAINTS.maxImages.default} photos, types:{' '}
+        {(allowedTypes || []).join(', ')}, max{' '}
+        {maxSizeMb || CONSTRAINTS.maxSizeMb.default} MB/file
+      </Typography>
+    </Box>
   )
 }
+
+export const HMR = true // ensure HMR triggers on parent imports

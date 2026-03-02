@@ -1,7 +1,5 @@
 import { ThemeProvider } from '@styles/minimal/theme-provider'
-
-import { FSAResponseAreaTub } from './types/FSA'
-// import { SandboxResponseAreaTub } from './types/Sandbox'
+import { SandboxResponseAreaTub } from './types/Sandbox/index'
 
 function ResponseAreaInputWrapper({ children }: { children: React.ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>
