@@ -21,6 +21,23 @@ interface FSAInputProps {
   isTeacherMode: boolean
 }
 
+/* -------------------- Layout / drawing constants -------------------- */
+
+/** Minimum bounding-box diameter (px) for a drawn stroke to be recognised as a circle. */
+const MIN_CIRCLE_DIAMETER_PX = 25
+/** Stroke length must exceed this fraction of the estimated circumference. */
+const MIN_STROKE_CIRCUMFERENCE_RATIO = 0.3
+/** Start-to-end distance must be less than this fraction of the diameter (i.e. the stroke is "closed"). */
+const MAX_ENDPOINT_DISTANCE_RATIO = 0.5
+/** Maximum distance (px) from a pointer position to the nearest node for snapping. */
+const NODE_SNAP_DISTANCE_PX = 75
+/** Base offset (px) for random node placement on the X axis. */
+const NEW_NODE_OFFSET_X = 100
+/** Base offset (px) for random node placement on the Y axis. */
+const NEW_NODE_OFFSET_Y = 100
+/** Range (px) added to the base offset via Math.random(). */
+const NEW_NODE_RANDOM_RANGE = 300
+
 export const FSAInput: React.FC<FSAInputProps> = ({
   answer,
   handleChange,
@@ -288,9 +305,9 @@ export const FSAInput: React.FC<FSAInputProps> = ({
 
     const circumference = Math.PI * diameter
     const isCircle =
-      diameter > 25 &&
-      strokeLength > circumference * 0.3 &&
-      distance < diameter * 0.5
+      diameter > MIN_CIRCLE_DIAMETER_PX &&
+      strokeLength > circumference * MIN_STROKE_CIRCUMFERENCE_RATIO &&
+      distance < diameter * MAX_ENDPOINT_DISTANCE_RATIO
 
     const cy = cyRef.current
 
@@ -323,7 +340,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
             }
           })
 
-          return min < 75 ? closest : null
+          return min < NODE_SNAP_DISTANCE_PX ? closest : null
         }
 
 
@@ -407,8 +424,8 @@ export const FSAInput: React.FC<FSAInputProps> = ({
       group: 'nodes',
       data: { id, displayLabel: id },
       position: {
-        x: 100 + Math.random() * 300,
-        y: 100 + Math.random() * 300,
+        x: NEW_NODE_OFFSET_X + Math.random() * NEW_NODE_RANDOM_RANGE,
+        y: NEW_NODE_OFFSET_Y + Math.random() * NEW_NODE_RANDOM_RANGE,
       },
     })
 
