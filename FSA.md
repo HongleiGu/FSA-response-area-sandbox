@@ -70,6 +70,13 @@ The controller class that integrates the editor into the application wizard.
 
 Since the frontend and backend see the data differently, the `FSAConverter` utility is used at the network boundary.
 
+> **Design note:** Ideally the backend would handle this conversion so that
+> multiple evaluation functions can consume the same canonical format without
+> each reimplementing a converter. The current frontend-side conversion exists
+> as a stop-gap because the Zod `jsonNestedSchema` enforces a 2-level nesting
+> limit. A future iteration should move this responsibility to the backend
+> API layer.
+
 | Method | Source | Target | Reason |
 | --- | --- | --- | --- |
 | `toFrontend()` | `BackendFSA` | `FSA` | Unpacks objects into `"q0 |
@@ -87,6 +94,10 @@ Since the frontend and backend see the data differently, the `FSAConverter` util
 ---
 
 ## 5. Important Implementation Notes
+
+* **Feedback contract:** The evaluation function should return feedback in a
+  simple, directly-displayable form (matching the `FSAFeedback` type) so the
+  response area can render it without additional parsing or transformation.
 
 * **Unique Identifiers**: Edge IDs in React Flow are generated as ``e-${from}-${symbol}-${to}``. If the automaton is Non-Deterministic (NFA), ensure symbol uniqueness or add a UUID to the ID string.
 * **Visual Cues**:

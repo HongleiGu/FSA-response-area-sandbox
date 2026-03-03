@@ -9,6 +9,10 @@ type MutableFeedback = Pick<FSAFeedback, "errors" | "warnings">;
 
 type OutgoingMap = Map<string, Array<{ symbol: string; to: string }>>;
 
+// TODO: Consider moving basic validation checks to the evaluation function
+//       so that multiple evaluation functions can share validation logic
+//       on the backend rather than duplicating it in the response area.
+
 /* ===========================
    Basic validation checks
 =========================== */
@@ -167,6 +171,10 @@ const checkTransitions = (
 
   return outgoing;
 };
+
+// TODO: Structural computations (determinism, completeness, reachability,
+//       dead-state analysis) should ideally live in the evaluation function
+//       so the response area stays a thin presentation layer.
 
 /* ===========================
    Structural computations

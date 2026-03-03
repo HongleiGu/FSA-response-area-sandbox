@@ -1,5 +1,6 @@
 import { CodeResponseAreaTub } from './Code'
 import { EssayResponseAreaTub } from './Essay'
+import { FSAResponseAreaTub } from './FSA'
 import { ImagesResponseAreaTub } from './Images'
 import { LikertResponseAreaTub } from './Likert'
 import { MathMultiLinesResponseAreaTub } from './MathMultiLines'
@@ -28,6 +29,7 @@ export const supportedResponseTypes = [
   'ESSAY',
   'CODE',
   'MILKDOWN',
+  'FSA'
   'LIKERT',
   'MATH_SINGLE_LINE',
   'MATH_MULTI_LINES',
@@ -58,6 +60,8 @@ const createReponseAreaTub = (type: string): ResponseAreaTub => {
       return new EssayResponseAreaTub()
     case 'CODE':
       return new CodeResponseAreaTub()
+    case 'FSA':
+      return new FSAResponseAreaTub()
     case 'LIKERT':
       return new LikertResponseAreaTub()
     case 'MATH_SINGLE_LINE':
