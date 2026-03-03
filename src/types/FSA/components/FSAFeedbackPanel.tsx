@@ -27,7 +27,6 @@ export function FSAFeedbackPanel({
   }
 
   const safeFeedback = feedback
-  console.log(safeFeedback)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

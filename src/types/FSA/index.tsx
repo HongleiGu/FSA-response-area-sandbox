@@ -53,7 +53,6 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
     /* ---------- Extract submitted feedback ---------- */
 
     const submittedFeedback: FSAFeedback | null = (() => {
-      console.log("raw:", props)
       const raw = props.feedback?.feedback
       if (!raw) return null
 
@@ -61,20 +60,15 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
         const jsonPart = raw.split('<br />')[1]?.trim()
         if (!jsonPart) return null
         return JSON.parse(jsonPart)
-      } catch (e) {
-
-        console.error('Failed to parse feedback JSON:', e)
+      } catch {
         return null
       }
     })()
-    console.log("submitted:", submittedFeedback)
 
     /* ---------- Effective feedback ---------- */
 
     const effectiveFeedback =
       this.previewFeedback ?? submittedFeedback
-
-    console.log(submittedFeedback, this.previewFeedback, effectiveFeedback)
 
     return (
       <FSAInput
