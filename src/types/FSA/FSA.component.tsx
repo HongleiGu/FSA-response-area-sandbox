@@ -387,6 +387,13 @@ export const FSAInput: React.FC<FSAInputProps> = ({
 
   /* -------------------- Sync to backend -------------------- */
 
+  /**
+   * Reads the current Cytoscape graph and converts it into the
+   * flattened `FSA` data structure expected by the response-area
+   * pipeline.  Called after every graph mutation (add/remove
+   * node or edge) so the parent component always holds an
+   * up-to-date serialisable snapshot of the automaton.
+   */
   const syncToBackend = (): void => {
     const cy = cyRef.current
     if (!cy) return
