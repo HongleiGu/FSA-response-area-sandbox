@@ -38,6 +38,10 @@ const NEW_NODE_OFFSET_Y = 100
 /** Range (px) added to the base offset via Math.random(). */
 const NEW_NODE_RANDOM_RANGE = 300
 /** Config for Cytoscape */
+// please take special notice to the data(label)
+// this means the cy id for node and edges are just for making them different, it is never passed in the data
+// the displayed name will always be the data.label field
+// as an analogy, think of the id as the SQL primary key, and the data.label is the stuff really displayed
 const CY_CONFIG = (containerRef: React.MutableRefObject<HTMLDivElement | null>): cytoscape.CytoscapeOptions => {
   return {
     container: containerRef.current,
@@ -46,7 +50,7 @@ const CY_CONFIG = (containerRef: React.MutableRefObject<HTMLDivElement | null>):
       {
         selector: 'node',
         style: {
-          label: 'data(displayLabel)',
+          label: 'data(label)',
           'text-valign': 'center',
           'text-halign': 'center',
           width: 50,
@@ -320,7 +324,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
         const id = `q${cy.nodes().length}`
         cy.add({
           group: 'nodes',
-          data: { id, displayLabel: id },
+          data: { id, label: id },
           position: {
             x: bounds.center.x,
             y: bounds.center.y,
@@ -433,7 +437,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
 
     cy.add({
       group: 'nodes',
-      data: { id, displayLabel: id },
+      data: { id, label: id },
       position: {
         x: NEW_NODE_OFFSET_X + Math.random() * NEW_NODE_RANDOM_RANGE,
         y: NEW_NODE_OFFSET_Y + Math.random() * NEW_NODE_RANDOM_RANGE,
