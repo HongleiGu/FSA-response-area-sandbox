@@ -38,7 +38,6 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
 
     // Preview passed — ensure it's cleared
     this.previewFeedback = null
-    // this.phase = CheckPhase.Idle
   }
 
   /* -------------------- Input -------------------- */
@@ -48,12 +47,12 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
     const parsed = this.answerSchema.safeParse(props.answer)
     const validAnswer = parsed.success ? parsed.data : defaultFSA
 
-    // this.response = validAnswer
-
     /* ---------- Extract submitted feedback ---------- */
 
     const submittedFeedback: FSAFeedback | null = (() => {
-      const raw = props.feedback?.feedback
+      // since the props.feedback is a union of picks
+      if (!props.feedback || !('feedback' in props.feedback)) return null
+      const raw = props.feedback.feedback
       if (!raw) return null
 
       try {
@@ -85,7 +84,7 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
             this.previewFeedback = preview
             this.phase = CheckPhase.PreviewError
           } else {
-            this.previewFeedback = null   // 🔥 THIS IS THE KEY
+            this.previewFeedback = null
             this.phase = CheckPhase.Idle
           }
         }}

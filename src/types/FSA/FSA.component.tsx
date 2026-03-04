@@ -37,6 +37,83 @@ const NEW_NODE_OFFSET_X = 100
 const NEW_NODE_OFFSET_Y = 100
 /** Range (px) added to the base offset via Math.random(). */
 const NEW_NODE_RANDOM_RANGE = 300
+/** Config for Cytoscape */
+const CY_CONFIG = (containerRef: React.MutableRefObject<HTMLDivElement | null>): cytoscape.CytoscapeOptions => {
+  return {
+    container: containerRef.current,
+    layout: { name: 'preset' },
+    style: [
+      {
+        selector: 'node',
+        style: {
+          label: 'data(displayLabel)',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          width: 50,
+          height: 50,
+          'background-color': '#fff',
+          'border-width': 1,
+          'border-color': '#555',
+        },
+      },
+      {
+        selector: 'node.initial',
+        style: {
+          'border-width': 3,
+          'border-color': '#1976d2',
+        },
+      },
+      {
+        selector: 'node.accept',
+        style: {
+          'border-style': 'double',
+          'border-width': 4,
+        },
+      },
+      {
+        selector: 'node.error-highlight',
+        style: {
+          'background-color': '#ffebee',
+          'border-color': '#d32f2f',
+          'border-width': 4,
+        },
+      },
+      {
+        selector: 'edge',
+        style: {
+          label: 'data(label)',
+          'curve-style': 'bezier',
+          'target-arrow-shape': 'triangle',
+          'line-color': '#555',
+          'target-arrow-color': '#555',
+          'text-background-color': '#fff',
+          'text-background-opacity': 1,
+          'text-background-padding': '3px',
+        },
+      },
+      {
+        selector: 'edge.error-highlight',
+        style: {
+          'line-color': '#d32f2f',
+          'target-arrow-color': '#d32f2f',
+          'line-style': 'dashed',
+          width: 3,
+        },
+      },
+      { 
+        selector: 'edge.epsilon', 
+        style: { 
+          'line-style': 'dashed', 
+          'line-color': '#6a1b9a', 
+          'target-arrow-color': '#6a1b9a', 
+          width: 3, 
+          'font-style': 
+          'italic', 
+        }, 
+      },
+    ],
+  }
+}
 
 export const FSAInput: React.FC<FSAInputProps> = ({
   answer,
@@ -74,80 +151,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
   useEffect(() => {
     if (!containerRef.current) return
 
-    const cy: Core = cytoscape({
-      container: containerRef.current,
-      layout: { name: 'preset' },
-      style: [
-        {
-          selector: 'node',
-          style: {
-            label: 'data(displayLabel)',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            width: 50,
-            height: 50,
-            'background-color': '#fff',
-            'border-width': 1,
-            'border-color': '#555',
-          },
-        },
-        {
-          selector: 'node.initial',
-          style: {
-            'border-width': 3,
-            'border-color': '#1976d2',
-          },
-        },
-        {
-          selector: 'node.accept',
-          style: {
-            'border-style': 'double',
-            'border-width': 4,
-          },
-        },
-        {
-          selector: 'node.error-highlight',
-          style: {
-            'background-color': '#ffebee',
-            'border-color': '#d32f2f',
-            'border-width': 4,
-          },
-        },
-        {
-          selector: 'edge',
-          style: {
-            label: 'data(label)',
-            'curve-style': 'bezier',
-            'target-arrow-shape': 'triangle',
-            'line-color': '#555',
-            'target-arrow-color': '#555',
-            'text-background-color': '#fff',
-            'text-background-opacity': 1,
-            'text-background-padding': '3px',
-          },
-        },
-        {
-          selector: 'edge.error-highlight',
-          style: {
-            'line-color': '#d32f2f',
-            'target-arrow-color': '#d32f2f',
-            'line-style': 'dashed',
-            width: 3,
-          },
-        },
-        { 
-          selector: 'edge.epsilon', 
-          style: { 
-            'line-style': 'dashed', 
-            'line-color': '#6a1b9a', 
-            'target-arrow-color': '#6a1b9a', 
-            width: 3, 
-            'font-style': 
-            'italic', 
-          }, 
-        },
-      ],
-    })
+    const cy: Core = cytoscape(CY_CONFIG(containerRef))
 
     cyRef.current = cy
     return () => cy.destroy()
@@ -385,7 +389,7 @@ export const FSAInput: React.FC<FSAInputProps> = ({
     setIsDrawing(false)
   }
 
-  /* -------------------- Sync to backend -------------------- */
+  /* -------------------- Sync with React states -------------------- */
 
   /**
    * Reads the current Cytoscape graph and converts it into the
