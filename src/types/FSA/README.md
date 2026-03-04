@@ -1,145 +1,190 @@
-# FSA Response Area: Test Guide
+Here is a polished **README-style** version, structured for a repository:
 
-This guide is for testing the **FSA** response area only.
+---
 
-## Scope
+# FSA Editor Module
 
-- Covers local preview validation (`validateFSA`) and UI behavior in the FSA editor.
-- Does **not** assume backend language-equivalence grading is available.
+A visual **Finite State Automata (FSA)** editor built for structured educational workflows.
 
-## Run Locally
+This module provides:
 
-1. Install deps:
+* An interactive graph-based automaton editor
+* A flattened frontend schema compatible with strict JSON validation
+* Backend conversion support for structured automata processing
+* Integrated evaluation and feedback support via the wizard system
 
-   ```bash
-   yarn
-   ```
+---
 
-2. Start sandbox:
+# Overview
 
-   ```bash
-   yarn dev
-   ```
+The FSA Editor bridges:
 
-   If you only want to iterate in the local Vite mode, use:
+* A **flattened TypeScript/Zod frontend representation**
+* A **nested backend automaton model**
 
-   ```bash
-   yarn dev:fsa
-   ```
+It enables users to construct automata visually while maintaining strict schema compatibility.
 
-3. In Lambda Feedback sandbox settings, point to your local URL and ensure response type is `FSA`.
+---
 
-## Quick Manual Test Flow
+# 1. Core Data Structures
 
-1. Open/create an item with FSA response area.
-2. In the editor, click `+ Add State` to create states.
-3. Select a state to toggle `Initial State` and `Accepting State`.
-4. Create transitions by either:
-   - clicking `✏️ Enable Draw Mode` and drawing from one state to another, or
-   - selecting an edge and editing `Transition Symbol`.
-5. Watch the feedback panel in real time.
+## Frontend Schema (`FSA`)
 
-Expected generic behavior:
+To satisfy the two-level nesting restriction enforced by `jsonNestedSchema`, transitions are stored as flattened strings.
 
-- Invalid automata show `Preview Errors` and summary: `The automaton is not a valid finite-state automaton.`
-- Valid automata clear preview errors and show summary: `The automaton is a valid finite-state automaton.`
-- If errors include highlights, the matching node/edge is marked in red.
+```ts
+export interface FSA {
+  states: string[];
+  alphabet: string[];
+  transitions: string[]; // "from_state|symbol|to_state"
+  initial_state: string;
+  accept_states: string[];
+}
+```
 
-## Example Questions and Expected Responses
+### Transition Encoding
 
-Use these prompts while testing the UI.
+Transitions use a pipe-separated format:
 
-### Q1. “Build a DFA over `{a,b}` that accepts strings ending in `a`.”
+```
+"from_state|symbol|to_state"
+```
 
-Suggested student automaton:
+This guarantees compatibility with frontend validation.
 
-- States: `q0`, `q1`
-- Initial: `q0`
-- Accept: `q1`
-- Transitions:
-  - `q0|a|q1`
-  - `q0|b|q0`
-  - `q1|a|q1`
-  - `q1|b|q0`
+This type will be expanded in the backend with pydantic validation
 
-Expected response:
+---
 
-- No preview errors.
-- Summary is valid.
-- Structural section should report deterministic = Yes and complete = Yes.
+# 2. Editor Operations
 
-### Q2. “Create any FSA with at least one transition, but forget to set an initial state.”
+## 2.1 Adding & Editing States and Transitions
 
-Suggested student automaton:
+### Draw Mode
 
-- States: `q0`
-- Initial: *(unset / empty)*
-- Accept: `q0`
-- Transition: `q0|a|q0`
+Users can enable **Draw Mode** to sketch directly on the canvas.
 
-Expected response:
+The stroke will be red directly on the canvas
 
-- Error code `INVALID_INITIAL`.
-- Message similar to: `Initial state "" is not a valid state.`
-- Summary is invalid.
+* Drawing a **circle** → creates a new state.
+* Drawing a **line between two states** → creates a transition.
+* Gestures are automatically interpreted and converted into graph elements.
 
-### Q3. “Create a machine where one transition uses a symbol not in the alphabet.”
+---
 
-How to trigger:
+### Manual Node Creation
 
-1. Create two states (`q0`, `q1`) and transition `q0 -> q1`.
-2. Set edge label to `z`.
-3. Ensure no other edge uses `z`, then edit state/edge data so alphabet effectively excludes intended symbol set (or create malformed transition data in saved answer payload).
+States can also be added manually (e.g., via UI controls or prompts).
+This allows precise creation without gesture detection.
 
-Expected response:
+---
 
-- Error code `INVALID_TRANSITION_SYMBOL` for out-of-alphabet symbols.
-- Transition/alphabet symbol highlighting appears in red.
+### Selecting Nodes & Edges
 
-> Note: In normal UI flow, alphabet is derived from edge labels. This means this case is easiest to reproduce with malformed persisted data rather than pure UI actions.
+Clicking a node or edge:
 
-### Q4. “Create an automaton with an unreachable state.”
+* Displays its properties in the **ItemPropertiesPanel** (left side).
+* Allows editing of:
 
-Suggested student automaton:
+  * State name
+  * Transition label
+  * State type (initial/accepting)
 
-- States: `q0`, `q1`, `q2`
-- Initial: `q0`
-- Accept: `q1`
-- Transitions:
-  - `q0|a|q1`
-  - `q1|a|q1`
-  - *(no transitions from/to `q2`)*
+---
 
-Expected response:
+### Setting Initial & Accepting States
 
-- May still be valid (no structural error required).
-- Structural section lists `q2` under `Unreachable states`.
+Within the properties panel, a state can be marked as:
 
-### Q5. “Create two outgoing transitions from the same state with the same symbol.”
+* **Initial State**
+* **Accepting State**
 
-Suggested student automaton:
+Changes update immediately in the UI.
 
-- States: `q0`, `q1`, `q2`
-- Initial: `q0`
-- Accept: `q1`
-- Transitions:
-  - `q0|a|q1`
-  - `q0|a|q2`
+---
 
-Expected response:
+## 2.2 UI Conventions
 
-- No hard preview error from local validator for nondeterminism.
-- Structural section shows deterministic = No.
+The editor follows consistent visual rules:
 
-## Regression Checklist
+| Type                   | Visual Style         |
+| ---------------------- | -------------------- |
+| Initial State          | Bold blue border     |
+| Accepting State        | Double-circle border |
+| ε (Epsilon) Transition | Purple dashed arrow  |
+| Errored Component      | Highlighted in red (only if hightlight config is set in the evaluation params)   |
 
-- `Preview Errors` appears only when local validation has errors.
-- Error count and error text update immediately after editing states/edges.
-- Deleting selected node/edge updates feedback and structural metrics.
-- `Fit to Screen` and draw mode toggling do not corrupt answer state.
-- Initial/accept visual styles remain correct after edits.
+These visual cues help users quickly identify automaton structure and validation issues.
 
-## Known Notes
+---
 
-- Local preview validation is structural/syntactic and does not perform full language-equivalence checking.
-- Some error types are easier to reproduce via malformed saved payloads than through normal UI controls.
+# 3. Feedback & Evaluation
+
+## 3.1 Evaluation Parameters (Wizard Component)
+
+Evaluation parameters are configured in the **Wizard component**, inside a collapsible **Eval Params** panel.
+
+* These settings are **not displayed in the FSA input component**.
+* This keeps the editor focused solely on automaton construction.
+
+the panel corresponds to the `FSAConfig` type
+
+```ts
+export const fsaConfigSchema = z.object({
+  evaluation_mode: z.enum(['strict', 'lenient', 'partial']).optional(),
+  expected_type: z.enum(['DFA', 'NFA', 'any']).optional(),
+  feedback_verbosity: z.enum(['minimal', 'standard', 'detailed']).optional(),
+
+  check_minimality: z.boolean().optional(),
+  check_completeness: z.boolean().optional(),
+
+  highlight_errors: z.boolean().optional(),
+})
+```
+
+please find the other details in ./src/FSA/types.ts
+
+---
+
+## 3.2 Feedback Display
+
+Feedback (both preview and final submission):
+
+* Appears below the **ItemPropertiesPanel**
+* Conforms to the `FSAFeedback` type
+* Requires no additional transformation before rendering
+
+the FSAFeedback type can be seen below:
+
+```ts
+export const FSAFeedbackSchema = z.object({
+  summary: z.string().default(""),
+
+  errors: z.array(ValidationErrorSchema).default([]),
+  warnings: z.array(ValidationErrorSchema).default([]),
+
+  structural: StructuralInfoSchema.optional(),
+  language: LanguageComparisonSchema.optional(),
+
+  test_results: z.array(TestResultSchema).default([]),
+  hints: z.array(z.string()).default([]),
+});
+```
+
+please find the other details in ./src/FSA/types.ts
+
+# 4. Running Guide
+
+For the first time we run this code, make sure to build with
+
+```
+yarn build
+```
+
+then we can
+
+```
+yarn dev
+```
+
+to run the sandbox

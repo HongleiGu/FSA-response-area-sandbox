@@ -1,9 +1,6 @@
 import React from 'react'
-import { z } from 'zod'
 
-import { fsaConfigSchema } from '../type'
-
-type FSAConfig = z.infer<typeof fsaConfigSchema>
+import { FSAConfig } from '../type'
 
 interface ConfigPanelProps {
   config: FSAConfig
