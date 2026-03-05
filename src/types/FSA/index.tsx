@@ -1,4 +1,3 @@
-
 import {
   BaseResponseAreaProps,
   BaseResponseAreaWizardProps,
@@ -16,10 +15,17 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
   protected answerSchema = fsaAnswerSchema
   protected answer: FSA = defaultFSA
 
+  // Holds validation feedback from the live preview pass (before submission).
+  // Null means the current answer is structurally valid.
   private previewFeedback: FSAFeedback | null = null
+
+  // Tracks which stage of the check lifecycle the component is in,
+  // so FSAInput can render the appropriate UI affordances.
   private phase: CheckPhase = CheckPhase.Idle
 
+  // Feedback is handled locally via validateFSA rather than delegated to the platform.
   public readonly delegateFeedback = false
+  // Live preview is re-evaluated on every handleChange, so we own that loop too.
   public readonly delegateLivePreview = true
 
   initWithConfig = () => {}
@@ -27,26 +33,29 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
   /* -------------------- Custom Check -------------------- */
 
   customCheck = () => {
-    // Block submission if preview validation fails
+    // If previewFeedback is still set, the answer failed live validation —
+    // block submission so the student must fix errors first.
     if (this.previewFeedback) {
       throw new Error('preview failed')
     }
 
-    // Preview passed — ensure it's cleared
+    // Live validation passed; nothing extra to do before the platform submits.
     this.previewFeedback = null
   }
 
   /* -------------------- Input -------------------- */
 
   public InputComponent = (props: BaseResponseAreaProps): JSX.Element => {
-    // Ensure a valid FSA answer
+    // Guard against a malformed or missing answer (e.g. first render, corrupt state).
     const parsed = this.answerSchema.safeParse(props.answer)
     const validAnswer = parsed.success ? parsed.data : defaultFSA
 
-    /* ---------- Extract submitted feedback ---------- */
-
+    /* ---------- Extract submitted feedback ----------
+     * props.feedback is a union type; we only care about the branch that
+     * carries a 'feedback' string, which is the platform's post-submission
+     * response. The string is formatted as "message<br />jsonPayload".
+     */
     const submittedFeedback: FSAFeedback | null = (() => {
-      // since the props.feedback is a union of picks
       if (!props.feedback || !('feedback' in props.feedback)) return null
       const raw = props.feedback.feedback
       if (!raw) return null
@@ -60,10 +69,11 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
       }
     })()
 
-    /* ---------- Effective feedback ---------- */
-
-    const effectiveFeedback =
-      this.previewFeedback ?? submittedFeedback
+    /* ---------- Effective feedback ----------
+     * previewFeedback (live) takes priority over submittedFeedback (post-submit)
+     * so the student sees real-time errors while editing.
+     */
+    const effectiveFeedback = this.previewFeedback ?? submittedFeedback
 
     return (
       <FSAInput
@@ -72,8 +82,11 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
         feedback={effectiveFeedback}
         phase={this.phase}
         handleChange={(val: FSA) => {
+          // Propagate the new answer up to the platform.
           props.handleChange(val)
 
+          // Run live validation and update previewFeedback / phase so that
+          // FSAInput can highlight errors without waiting for a submission round-trip.
           const preview = validateFSA(val)
 
           if (preview.errors.length > 0) {
@@ -91,6 +104,9 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
 
   /* -------------------- Wizard -------------------- */
 
+  // The wizard is the teacher-facing authoring view. Feedback is always null
+  // (teachers are constructing the answer, not being assessed), and the phase
+  // is fixed at Evaluated so the full graph UI is visible from the start.
   public WizardComponent = (
     props: BaseResponseAreaWizardProps,
   ): JSX.Element => {
@@ -101,6 +117,8 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
         answer={this.answer}
         phase={CheckPhase.Evaluated}
         handleChange={(val: FSA) => {
+          // Keep the local answer mirror in sync so customCheck / re-renders
+          // always have the latest value without an extra props round-trip.
           this.answer = val
           props.handleChange({
             responseType: this.responseType,
