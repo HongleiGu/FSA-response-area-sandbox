@@ -1,6 +1,3 @@
-// import React, { useMemo } from 'react'
-// import { z } from 'zod'
-
 
 import {
   BaseResponseAreaProps,
@@ -21,7 +18,6 @@ export class FSAResponseAreaTub extends ResponseAreaTub {
 
   private previewFeedback: FSAFeedback | null = null
   private phase: CheckPhase = CheckPhase.Idle
-  // private response: FSA | null = null
 
   public readonly delegateFeedback = false
   public readonly delegateLivePreview = true

@@ -24,7 +24,6 @@ interface ItemPropertiesPanelProps {
   answer: FSA
   handleChange: (fsa: FSA) => void
 
-  syncToBackend: () => void
   feedback: FSAFeedback | null
   phase: CheckPhase
 
@@ -44,11 +43,127 @@ export default function ItemPropertiesPanel({
   setSelectedEdge,
   answer,
   handleChange,
-  syncToBackend,
   feedback,
   phase,
-  pathRef
+  pathRef,
 }: ItemPropertiesPanelProps): JSX.Element {
+
+  /* -------------------- Derived ids -------------------- */
+  const selectedNodeId = selectedNode?.id() ?? null
+  const selectedEdgeId = selectedEdge?.id() ?? null
+
+  /* -------------------- Helpers -------------------- */
+
+  /**
+   * Parse the stable edge id back into "from|symbol|to" transition string.
+   * Edge ids are of the form "e|from|symbol|to".
+   */
+  const transitionFromEdgeId = (edgeId: string): string =>
+    edgeId.startsWith('e|') ? edgeId.slice(2) : edgeId
+
+  const parseTransition = (t: string) => {
+    const parts = t.split('|')
+    return parts.length === 3
+      ? { from: parts[0], symbol: parts[1], to: parts[2] }
+      : null
+  }
+
+  /* -------------------- Delete -------------------- */
+
+  const handleDelete = () => {
+    if (selectedNodeId) {
+      // Remove state and all transitions that reference it
+      const newStates = answer.states.filter((s) => s !== selectedNodeId)
+      const newTransitions = answer.transitions.filter((t) => {
+        const p = parseTransition(t)
+        return p && p.from !== selectedNodeId && p.to !== selectedNodeId
+      })
+      const newAcceptStates = answer.accept_states.filter((s) => s !== selectedNodeId)
+      const newInitial =
+        answer.initial_state === selectedNodeId ? '' : answer.initial_state
+
+      handleChange({
+        ...answer,
+        states: newStates,
+        transitions: newTransitions,
+        accept_states: newAcceptStates,
+        initial_state: newInitial,
+        alphabet: deriveAlphabet(newTransitions),
+      })
+      setSelectedNode(null)
+    }
+
+    if (selectedEdgeId) {
+      const transition = transitionFromEdgeId(selectedEdgeId)
+      const newTransitions = answer.transitions.filter((t) => t !== transition)
+      handleChange({
+        ...answer,
+        transitions: newTransitions,
+        alphabet: deriveAlphabet(newTransitions),
+      })
+      setSelectedEdge(null)
+    }
+  }
+
+  /** Re-derive alphabet from the current transition list. */
+  const deriveAlphabet = (transitions: string[]): string[] =>
+    Array.from(
+      new Set(
+        transitions
+          .map((t) => parseTransition(t)?.symbol ?? '')
+          .filter(Boolean),
+      ),
+    )
+
+  /* -------------------- Node label edit -------------------- */
+
+  const handleNodeLabelChange = (value: string) => {
+    if (!selectedNodeId) return
+    // Update the label in cy directly (it is display-only, not stored in answer)
+    selectedNode?.data('label', value)
+    // Note: label is not part of FSA answer schema — it lives only in cy.
+    // If your FSA type does store labels, call handleChange here.
+  }
+
+  /* -------------------- Edge symbol edit -------------------- */
+
+  const handleEdgeSymbolChange = (value: string) => {
+    if (!selectedEdgeId || !selectedEdge) return
+
+    const oldTransition = transitionFromEdgeId(selectedEdgeId)
+    const parsed = parseTransition(oldTransition)
+    if (!parsed) return
+
+    const newSymbol = value.trim()
+    const newTransition = `${parsed.from}|${newSymbol}|${parsed.to}`
+    const newEdgeId = `e|${newTransition}`
+
+    // Update cy element in place (id can't change, so we update the label data
+    // and re-derive the answer transition list)
+    selectedEdge.data('label', newSymbol)
+    if (newSymbol === 'ε' || newSymbol.toLowerCase() === 'epsilon' || newSymbol === '') {
+      selectedEdge.addClass('epsilon')
+    } else {
+      selectedEdge.removeClass('epsilon')
+    }
+
+    // Replace the old transition string in answer
+    const newTransitions = answer.transitions.map((t) =>
+      t === oldTransition ? newTransition : t,
+    )
+
+    handleChange({
+      ...answer,
+      transitions: newTransitions,
+      alphabet: deriveAlphabet(newTransitions),
+    })
+
+    // Keep selectedEdge in sync — the edge element itself hasn't been removed,
+    // only its data changed, so no re-selection needed.
+  }
+
+  /* -------------------- Render -------------------- */
+
   return (
     <div className={classes.panel}>
       <div className={classes.panelTitle}>Item Properties</div>
@@ -69,23 +184,22 @@ export default function ItemPropertiesPanel({
         Fit to Screen
       </button>
 
-      <button 
-        className={classes.addButton} 
-        onClick={() => { 
-          setDrawMode((m) => !m); 
-          setFromNode(null); 
-          cyRef.current?.nodes().removeClass('edge-source');
-          
-          // Clear any existing drawing when toggling draw mode
+      <button
+        className={classes.addButton}
+        onClick={() => {
+          setDrawMode((m) => !m)
+          setFromNode(null)
+          cyRef.current?.nodes().removeClass('edge-source')
+
           if (pathRef.current) {
             pathRef.current.remove()
             pathRef.current = null
           }
         }}
-        style={{ 
+        style={{
           backgroundColor: drawMode ? '#ff4444' : '#4CAF50',
           color: 'white',
-          borderColor: drawMode ? '#ff4444' : '#4CAF50'
+          borderColor: drawMode ? '#ff4444' : '#4CAF50',
         }}
       >
         {drawMode ? '✗ Cancel Draw Mode' : '✏️ Enable Draw Mode'}
@@ -98,11 +212,8 @@ export default function ItemPropertiesPanel({
             <label>Display Name</label>
             <input
               className={classes.inputField}
-              value={selectedNode.data('displayLabel') ?? ''}
-              onChange={(e) => {
-                selectedNode.data('displayLabel', e.target.value)
-                // syncToBackend()
-              }}
+              value={selectedNode.data('label') ?? ''}
+              onChange={(e) => handleNodeLabelChange(e.target.value)}
             />
           </div>
 
@@ -110,13 +221,14 @@ export default function ItemPropertiesPanel({
           <div className={classes.checkboxRow}>
             <input
               type="checkbox"
-              checked={answer.initial_state === selectedNode.id()}
+              checked={answer.initial_state === selectedNodeId}
               onChange={(e) => {
                 handleChange({
                   ...answer,
-                  initial_state: e.target.checked ? selectedNode.id() : answer.initial_state,
+                  initial_state: e.target.checked
+                    ? selectedNodeId!
+                    : answer.initial_state,
                 })
-                // syncToBackend()
               }}
             />
             <label>Initial State</label>
@@ -126,17 +238,14 @@ export default function ItemPropertiesPanel({
           <div className={classes.checkboxRow}>
             <input
               type="checkbox"
-              checked={answer.accept_states.includes(selectedNode.id())}
+              checked={answer.accept_states.includes(selectedNodeId!)}
               onChange={(e) => {
                 handleChange({
                   ...answer,
                   accept_states: e.target.checked
-                    ? [...answer.accept_states, selectedNode.id()]
-                    : answer.accept_states.filter(
-                        (id) => id !== selectedNode.id(),
-                      ),
+                    ? [...answer.accept_states, selectedNodeId!]
+                    : answer.accept_states.filter((id) => id !== selectedNodeId),
                 })
-                // syncToBackend()
               }}
             />
             <label>Accepting State</label>
@@ -151,43 +260,19 @@ export default function ItemPropertiesPanel({
           <input
             className={classes.inputField}
             value={selectedEdge.data('label') ?? ''}
-            onChange={(e) => {
-              const value = e.target.value.trim()
-
-              selectedEdge.data('label', value)
-
-              if (value === 'ε' || value.toLowerCase() === 'epsilon' || value === '') {
-                selectedEdge.addClass('epsilon')
-              } else {
-                selectedEdge.removeClass('epsilon')
-              }
-
-              syncToBackend()
-            }}
+            onChange={(e) => handleEdgeSymbolChange(e.target.value)}
           />
         </div>
       )}
 
       {/* -------------------- Delete -------------------- */}
       {(selectedNode || selectedEdge) && (
-        <button
-          className={classes.deleteButton}
-          onClick={() => {
-            selectedNode?.remove()
-            selectedEdge?.remove()
-            setSelectedNode(null)
-            setSelectedEdge(null)
-            syncToBackend()
-          }}
-        >
+        <button className={classes.deleteButton} onClick={handleDelete}>
           Delete Selected
         </button>
       )}
-      <FSAFeedbackPanel
-        feedback={feedback}
-        // previewFeedback={previewFeedback}
-        phase={phase}
-      />
+
+      <FSAFeedbackPanel feedback={feedback} phase={phase} />
     </div>
   )
 }

@@ -144,6 +144,13 @@ export const useLocalStyles = makeStyles()((theme) => ({
     borderRadius: 4,
     cursor: 'pointer',
   },
+  deleteButton: {
+    padding: '6px 10px',
+    backgroundColor: '#fff',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    cursor: 'pointer',
+  },
   epsilonButton: {
     marginTop: 6,
     padding: '4px 8px',

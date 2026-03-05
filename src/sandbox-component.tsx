@@ -1,4 +1,6 @@
 import { ThemeProvider } from '@styles/minimal/theme-provider'
+
+import { FSAResponseAreaTub } from './types/FSA'
 import { SandboxResponseAreaTub } from './types/Sandbox/index'
 
 function ResponseAreaInputWrapper({ children }: { children: React.ReactNode }) {
@@ -6,7 +8,7 @@ function ResponseAreaInputWrapper({ children }: { children: React.ReactNode }) {
 }
 
 // wrap the components with the necessary providers; only in the sandbox
-class WrappedSandboxResponseAreaTub extends SandboxResponseAreaTub {
+class WrappedSandboxResponseAreaTub extends FSAResponseAreaTub {
   constructor() {
     super()
 

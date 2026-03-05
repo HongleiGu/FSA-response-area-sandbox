@@ -21,12 +21,6 @@ This guide is for testing the **FSA** response area only.
    yarn dev
    ```
 
-   If you only want to iterate in the local Vite mode, use:
-
-   ```bash
-   yarn dev:fsa
-   ```
-
 3. In Lambda Feedback sandbox settings, point to your local URL and ensure response type is `FSA`.
 
 ## Quick Manual Test Flow

@@ -29,7 +29,7 @@ export const supportedResponseTypes = [
   'ESSAY',
   'CODE',
   'MILKDOWN',
-  'FSA'
+  'FSA',
   'LIKERT',
   'MATH_SINGLE_LINE',
   'MATH_MULTI_LINES',
