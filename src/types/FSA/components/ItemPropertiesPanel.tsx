@@ -130,16 +130,21 @@ export default function ItemPropertiesPanel({
   const handleEdgeSymbolChange = (value: string) => {
     if (!selectedEdgeId || !selectedEdge) return
 
-    const oldTransition = transitionFromEdgeId(selectedEdgeId)
-    const parsed = parseTransition(oldTransition)
+    // The edge id encodes the *original* from/to at creation time and never changes.
+    // We only use it to recover source and target — never the symbol.
+    const originalTransition = transitionFromEdgeId(selectedEdgeId)
+    const parsed = parseTransition(originalTransition)
     if (!parsed) return
 
     const newSymbol = value.trim()
-    const newTransition = `${parsed.from}|${newSymbol}|${parsed.to}`
-    const newEdgeId = `e|${newTransition}`
 
-    // Update cy element in place (id can't change, so we update the label data
-    // and re-derive the answer transition list)
+    // Reconstruct the *current* transition string using the live cy label,
+    // not the id — because the symbol may have already been edited once.
+    const currentSymbol = selectedEdge.data('label') as string
+    const currentTransition = `${parsed.from}|${currentSymbol}|${parsed.to}`
+    const newTransition = `${parsed.from}|${newSymbol}|${parsed.to}`
+
+    // Update the cy element label in place (id is immutable by design)
     selectedEdge.data('label', newSymbol)
     if (newSymbol === 'ε' || newSymbol.toLowerCase() === 'epsilon' || newSymbol === '') {
       selectedEdge.addClass('epsilon')
@@ -147,9 +152,9 @@ export default function ItemPropertiesPanel({
       selectedEdge.removeClass('epsilon')
     }
 
-    // Replace the old transition string in answer
+    // Replace the current transition string (not the original id-derived one)
     const newTransitions = answer.transitions.map((t) =>
-      t === oldTransition ? newTransition : t,
+      t === currentTransition ? newTransition : t,
     )
 
     handleChange({
@@ -157,9 +162,6 @@ export default function ItemPropertiesPanel({
       transitions: newTransitions,
       alphabet: deriveAlphabet(newTransitions),
     })
-
-    // Keep selectedEdge in sync — the edge element itself hasn't been removed,
-    // only its data changed, so no re-selection needed.
   }
 
   /* -------------------- Render -------------------- */
